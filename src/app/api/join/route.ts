@@ -24,14 +24,16 @@ export async function POST(req: NextRequest) {
         team_ids,
         org,
         role: 'direct_member'
-    }).catch(e => e as ErrorWithHTTPCode);
+    }).catch(e => { if (e instanceof ErrorWithHTTPCode) return e; else throw e });
 
     //if (!res) return NextResponse.json({}, { status: 500, statusText: 'Internal Server Error - GitHub API Error' })
 
+    const statusText = 'response' in res && res.response && typeof res.response === 'object' && 'data' in res.response && res.response.data && typeof res.response.data === 'object' && 'message' in res.response.data && typeof res.response.data.message === 'string' ? res.response.data.message : 'Internal Server Error - Unspecified GitHub API Error'
+
     if (res instanceof ErrorWithHTTPCode) {
         console.error(res)
-        return NextResponse.json(('response' in res && res.response) ?? {}, { status: res.code, statusText: 'response' in res && res.response && typeof res.response === 'object' && 'data' in res.response && res.response.data && typeof res.response.data === 'object' && 'message' in res.response.data && typeof res.response.data.message === 'string' ? res.response.data.message : 'Internal Server Error - Unspecified GitHub API Error' })
+        return NextResponse.json({res: ('response' in res && res.response) || {}, statusText}, { status: res.code })
     }
 
-    return NextResponse.json(res, { status: res.status, statusText: 'response' in res && res.response && typeof res.response === 'object' && 'data' in res.response && res.response.data && typeof res.response.data === 'object' && 'message' in res.response.data && typeof res.response.data.message === 'string' ? res.response.data.message : 'Internal Server Error - Unspecified GitHub API Error' })
+    return NextResponse.json({res, statusText}, { status: res.status })
 }
